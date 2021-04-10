@@ -1,2 +1,2 @@
 # VoCaUI-v2.0
-C
+Các bạn mở file device.ino trong thư mục device để xem hướng dẫn nhé.
