@@ -1,8 +1,8 @@
 #pragma once
 #include <Arduino.h>
 #include <ESP8266HTTPClient.h>
-#include "../lib/json/ArduinoJson.h"
-#include "../lib/mqtt/PubSubClient.h"
+#include "./json/ArduinoJson.h"
+#include "./mqtt/PubSubClient.h"
 // #include <PubSubClient.h>
 #include "utils.h"
 #include "render.h"

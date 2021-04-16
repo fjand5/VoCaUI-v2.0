@@ -1,7 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include "./event.h"
-#include "../lib/json/ArduinoJson.h"
+#include "./json/ArduinoJson.h"
 DynamicJsonDocument doc(8192);
 JsonObject obj = doc.to<JsonObject>();
 void renderComponent(String compt, String tab, String key, String name, String option){

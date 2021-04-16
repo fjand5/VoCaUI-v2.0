@@ -1,6 +1,6 @@
 #pragma once
 #define CONFIG_FILE "config.txt"
-#include "../lib/json/ArduinoJson.h"
+#include "./json/ArduinoJson.h"
 #include <LittleFS.h>
 #include <map>
 
