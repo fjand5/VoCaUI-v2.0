@@ -1,6 +1,6 @@
 #pragma once
 #define CONFIG_FILE "config.txt"
-
+#include "../lib/json/ArduinoJson.h"
 #include <LittleFS.h>
 #include <map>
 
@@ -9,7 +9,10 @@ long verContHost = 1;
 std::map < String, String > ConfigContent;
 
 
-
+void (*onConfigChange)(String key, String value) = NULL;
+void setOnConfigChange(void (*func)(String key, String value)){
+  onConfigChange = func;
+}
 // Mỗi dòng là một phần tử (một cặp key value) (key):(value)\n
 void loadFileIntoConfig(String content) {
   while (content.indexOf("\n") >= 0) {
@@ -47,6 +50,18 @@ String getValuesByString() {
   }
   return ret;
 }
+String getValuesByJson(){
+  DynamicJsonDocument doc(8192);
+  JsonObject obj = doc.to<JsonObject>();
+  String ret;
+  for (std::pair < String, String > e : ConfigContent) {
+    String k = e.first;
+    String v = e.second;
+    obj[k]=v;
+  }
+  serializeJson(obj,ret);
+  return ret;
+}
 // Gán giá trị cho key
 void setValue(String key, String value, bool save = true) {
   ConfigContent[key] = value;
@@ -68,6 +83,9 @@ void setValue(String key, String value, bool save = true) {
   }
 
   cfg_file.close();
+  if(onConfigChange != NULL){
+    onConfigChange(key,value);
+  }
 }
 
 // Khởi tạo

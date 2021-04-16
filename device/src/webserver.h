@@ -10,6 +10,7 @@
 #include "event.h"
 #include "dist.h"
 #include "utils.h"
+#include "mqtt.h"
 ESP8266WebServer server(80);
 bool isConnect = false;
 
@@ -74,11 +75,16 @@ void renderSystem(){
             setValue(key,val);
     });
   renderInputText("system","token","Token ngoinhaiot.com",R"({
-    "newLine":true,
     "label":"Token",
-    "showSplit":true
+    "newLine":true
     }))",[](String key, String val){
             setValue(key,val);
+    });
+  renderButton("system","conn_mqtt","Kết nối",R"({
+    "newLine":true,
+    "showSplit":true
+    }))",[](String key, String val){
+      connToMqttBroker(getValue("token"));
     });
   renderButton("system","reset","Reset hệ thống",R"({
     }))",[](String key, String val){

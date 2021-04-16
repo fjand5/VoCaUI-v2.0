@@ -1,5 +1,6 @@
 #include "./src/webserver.h"
 #include "./src/config.h"
+#include "./src/mqtt.h"
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -29,9 +30,11 @@ void setup() {
     }
   });
   setupWebserver();
+  setupMqtt();
   pinMode(D0, OUTPUT);
   digitalWrite(D0, getValue("device") == "true" ? LOW : HIGH);
 }
 void loop() {
   loopWebserver();
+  loopMqtt();
 }
