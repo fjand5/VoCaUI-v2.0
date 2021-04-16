@@ -478,7 +478,7 @@ boolean PubSubClient::publish_P(const char* topic, const char* payload, boolean 
 boolean PubSubClient::publish_P(const char* topic, const uint8_t* payload, unsigned int plength, boolean retained) {
     uint8_t llen = 0;
     uint8_t digit;
-    unsigned int rc = 0;
+    int rc = 0;
     uint16_t tlen;
     unsigned int pos = 0;
     unsigned int i;

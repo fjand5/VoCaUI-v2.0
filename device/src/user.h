@@ -1,3 +1,4 @@
+#pragma once
 #define USER_FILE "user.txt"
 
 #include <LittleFS.h>

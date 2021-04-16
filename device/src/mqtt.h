@@ -1,13 +1,14 @@
 #pragma once
 #include <Arduino.h>
 #include <ESP8266HTTPClient.h>
-#include <WiFiClient.h>
 #include "../lib/json/ArduinoJson.h"
 #include "../lib/mqtt/PubSubClient.h"
+// #include <PubSubClient.h>
 #include "utils.h"
 #include "render.h"
 #include "event.h"
 #include "config.h"
+
 DynamicJsonDocument mqttDoc(1024);
 WiFiClient mc;
 PubSubClient mqttClient(mc);
@@ -18,7 +19,7 @@ bool getMqttInfo(String token){
     WiFiClient client;
 
     HTTPClient http;
-    //if (http.begin(client, String("http://192.168.1.10:8000/dashboard/device/?token=") + token)) {  // HTTP
+    // if (http.begin(client, String("http://192.168.1.10:8000/dashboard/device/?token=") + token)) {  // HTTP
     if (http.begin(client, String("http://ngoinhaiot.com:8000/dashboard/device/?token=") + token)) {  // HTTP
 
         int httpCode = http.GET();

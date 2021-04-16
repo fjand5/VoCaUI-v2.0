@@ -4,7 +4,6 @@
 #include <LittleFS.h>
 #include <map>
 
-
 long verContHost = 1;
 std::map < String, String > ConfigContent;
 
