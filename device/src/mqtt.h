@@ -85,14 +85,12 @@ void mqttCallback(char* topic, byte* payload, unsigned int length){
 bool connToMqttBroker(String token, uint8_t countTry = 3){
     mqttClient.disconnect();
     while(getMqttInfo(token) == false){
-        delay(1000);
         countTry-- ;
         if(countTry == 0){
             return false;
         };
     };
     JsonObject obj = mqttDoc.as<JsonObject>();
-    serializeJsonPretty(obj,Serial);
     const char* username = obj["mqtt"]["username"];
     const char* password = obj["mqtt"]["password"];
     const char* server = obj["mqtt"]["server"];
@@ -128,5 +126,6 @@ void setupMqtt(){
 void loopMqtt(){
     if(!mqttClient.connected() && checkKey("token"))
         connToMqttBroker(getValue("token"),1);
-    mqttClient.loop();
+    else
+        mqttClient.loop();
 }

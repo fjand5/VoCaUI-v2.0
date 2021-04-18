@@ -9,6 +9,34 @@ void setup() {
   
 
   // render
+  renderSlider("Test Slider","slider-value","Slider",R"({
+    "newLine":true,
+  })",[](String key, String val){
+    Serial.println(key + ": " + val);
+    setValue(key,val);
+
+  });
+  renderSlider("Test Slider","slider-value2","Slider 2",R"({
+    "newLine":true,
+  })",[](String key, String val){
+    Serial.println(key + ": " + val);
+    setValue(key,val);
+
+  });
+  renderSlider("Test Slider","slider-value3","Slider 3",R"({
+    "newLine":true,
+  })",[](String key, String val){
+    Serial.println(key + ": " + val);
+    setValue(key,val);
+
+  });
+  renderSlider("Test Slider","slider-value4","Slider 4",R"({
+    "newLine":true,
+  })",[](String key, String val){
+    Serial.println(key + ": " + val);
+    setValue(key,val);
+
+  });
   renderButton("Control Led Button","on-build-led","On Led","{}",[](String key, String val){
     digitalWrite(D0, LOW);
     setValue("on-off-build-led","true");

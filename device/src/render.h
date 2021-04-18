@@ -12,6 +12,10 @@ void renderComponent(String compt, String tab, String key, String name, String o
   obj[tab][key]["type"]=compt;
 
 }
+void renderSlider(String tab, String key, String name, String option, EventFunc event = NULL){
+  addEvent(key, event);
+  renderComponent("input-slider", tab, key, name, option);
+}
 void renderToggle(String tab, String key, String name, String option, EventFunc event = NULL){
   addEvent(key, event);
   renderComponent("toggle", tab, key, name, option);
