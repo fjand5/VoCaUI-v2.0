@@ -8,7 +8,6 @@
 #include "render.h"
 #include "event.h"
 #include "config.h"
-
 DynamicJsonDocument mqttDoc(1024);
 WiFiClient mc;
 PubSubClient mqttClient(mc);
@@ -19,7 +18,8 @@ bool getMqttInfo(String token){
     WiFiClient client;
 
     HTTPClient http;
-    // if (http.begin(client, String("http://192.168.1.10:8000/dashboard/device/?token=") + token)) {  // HTTP
+    client.setTimeout(300);
+    //  if (http.begin(client, String("http://192.168.1.8:8000/dashboard/device/?token=") + token)) {  // HTTP
     if (http.begin(client, String("http://ngoinhaiot.com:8000/dashboard/device/?token=") + token)) {  // HTTP
 
         int httpCode = http.GET();
@@ -83,12 +83,11 @@ void mqttCallback(char* topic, byte* payload, unsigned int length){
     }
 }
 bool connToMqttBroker(String token, uint8_t countTry = 3){
+    mc.setTimeout(100);
     mqttClient.disconnect();
-    while(getMqttInfo(token) == false){
+
+    while(countTry && getMqttInfo(token) == false){
         countTry-- ;
-        if(countTry == 0){
-            return false;
-        };
     };
     JsonObject obj = mqttDoc.as<JsonObject>();
     const char* username = obj["mqtt"]["username"];
@@ -96,6 +95,7 @@ bool connToMqttBroker(String token, uint8_t countTry = 3){
     const char* server = obj["mqtt"]["server"];
     const int port = obj["mqtt"]["tcpPort"];
     mqttClient.setServer(server, port);
+    // mqttClient.setServer("192.168.1.8", port);
     mqttClient.setCallback (mqttCallback);
     baseTopic = splitString(token,".",2);
     bool isSuccess =  mqttClient.connect(baseTopic.c_str(), username, password);
@@ -124,8 +124,10 @@ void setupMqtt(){
     });
 };
 void loopMqtt(){
-    if(!mqttClient.connected() && checkKey("token"))
-        connToMqttBroker(getValue("token"),1);
-    else
+    if (mqttClient.connected())
         mqttClient.loop();
+    else if(checkKey("token")){
+      connToMqttBroker(getValue("token"),0);
+
+    }
 }
