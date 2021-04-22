@@ -2,7 +2,7 @@
   Đây là ví dụ cơ bản có chức năng đơn giản là điều khiển bật, tắt led trên mạch.
   Ví dụ nâng cao hơn và tài liệu hướng dẫn sẽ được bổ sung sau.
 */
-#include "example.h"
+#include "example2.h"
 /*
   Các bước thực hiện
   1. Nạp chương trình vào mạch (ESP8266 node)

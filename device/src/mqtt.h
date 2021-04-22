@@ -12,6 +12,14 @@ DynamicJsonDocument mqttDoc(1024);
 WiFiClient mc;
 PubSubClient mqttClient(mc);
 String baseTopic;
+void largePublish(String topic, String data, bool retain){
+    mqttClient.beginPublish(topic.c_str(),
+    data.length(), retain);
+    for(unsigned int i=0; i<data.length(); i++){
+        mqttClient.print(data[i]);
+    }
+    mqttClient.endPublish();
+}
 bool getMqttInfo(String token){
     
 
@@ -51,34 +59,15 @@ void mqttCallback(char* topic, byte* payload, unsigned int length){
         String cmd = obj["cmd"];
         String key = obj["key"];
         String val = obj["val"];
-        if(cmd == "pig"){
-            String res = "{\"cmd\":\"pog\",\"val\":\""+val+"\"}";
-            mqttClient.publish((baseTopic+"/Tx/").c_str(), res.c_str());
-        }
         if(cmd == "get"){
             String res = "{\"key\":\"" + key +"\",\"val\":\""+getValue(key)+"\"}";
-
-            mqttClient.publish((baseTopic+"/Tx/").c_str(), res.c_str());
+            largePublish((baseTopic+"/Tx/").c_str(), res.c_str(), false);
         }
         if(cmd == "gal"){
-            String tmp = getValuesByJson();
-            mqttClient.beginPublish((baseTopic+"/Tx/").c_str(),
-            tmp.length(), true);
-            for(unsigned int i=0; i<tmp.length(); i++){
-                mqttClient.print(tmp[i]);
-            }
-            mqttClient.endPublish();
+            largePublish((baseTopic+"/Tx/").c_str(), getValuesByJson(), false);
         }
         if(cmd == "exe"){
             execEvent(key, val);
-            String tmp = getValuesByJson();
-            mqttClient.beginPublish((baseTopic+"/Tx/").c_str(),
-            tmp.length(), true);
-            for(unsigned int i=0; i<tmp.length(); i++){
-                mqttClient.print(tmp[i]);
-            }
-            mqttClient.endPublish();
-
         }
     }
 }
@@ -98,18 +87,19 @@ bool connToMqttBroker(String token, uint8_t countTry = 3){
     // mqttClient.setServer("192.168.1.8", port);
     mqttClient.setCallback (mqttCallback);
     baseTopic = splitString(token,".",2);
-    bool isSuccess =  mqttClient.connect(baseTopic.c_str(), username, password);
+    mqttClient.setKeepAlive(5);
+    bool isSuccess =  mqttClient.connect(baseTopic.c_str(), username, password,
+      (baseTopic + "/state/").c_str(),
+      1,
+      true,
+      "offline"
+     );
     
     if(isSuccess){
         String tmp = getRender();
-
-        mqttClient.beginPublish((baseTopic+"/render/").c_str(),
-        tmp.length(), true);
-        for(unsigned int i=0; i<tmp.length(); i++){
-            mqttClient.print(tmp[i]);
-        }
-        mqttClient.endPublish();
-        mqttClient.subscribe((baseTopic+"/Rx/").c_str());
+        largePublish((baseTopic+"/render/").c_str(), getRender(), true);
+        largePublish((baseTopic + "/state/").c_str(), "online", true);
+        mqttClient.subscribe((baseTopic+"/Rx/").c_str(), 1);
         return true;
     }
     return false;
