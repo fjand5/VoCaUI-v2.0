@@ -27,7 +27,7 @@ bool getMqttInfo(String token){
 
     HTTPClient http;
     client.setTimeout(300);
-    //  if (http.begin(client, String("http://192.168.1.8:8000/dashboard/device/?token=") + token)) {  // HTTP
+    //  if (http.begin(client, String("http://192.168.1.17:8000/dashboard/device/?token=") + token)) {  // HTTP
     if (http.begin(client, String("http://ngoinhaiot.com:8000/dashboard/device/?token=") + token)) {  // HTTP
 
         int httpCode = http.GET();
@@ -105,12 +105,14 @@ bool connToMqttBroker(String token, uint8_t countTry = 3){
     return false;
 }
 void setupMqtt(){
-    if(checkKey("token")){
-        connToMqttBroker(getValue("token"));
+    if(checkKey("mqtt-token")){
+        connToMqttBroker(getValue("mqtt-token"));
     }
     setOnConfigChange([](String key, String val){
-        String res = "{\"" + key +"\":\""+getValue(key)+"\"}";
-        mqttClient.publish((baseTopic+"/Tx/").c_str(), res.c_str());
+        String res = getValue(key).indexOf("\"")>=0
+        ?"{\"" + key +"\":"+getValue(key)+"}" // can't cast to string
+        :"{\"" + key +"\":\""+getValue(key)+"\"}"; // cast to string 
+        largePublish((baseTopic+"/Tx/").c_str(), res.c_str(), false);
     });
 };
 void loopMqtt(){

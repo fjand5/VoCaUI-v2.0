@@ -1,8 +1,8 @@
 #pragma once
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-// Cấu trúc: [tên biến]:[x0];[y0][tab][x1];[y1][tab]...[xn];[yn][tab]
-// Thêm giá trị vào data
+#include "./json/ArduinoJson.h"
+
 String IpAddress2String(const IPAddress& ipAddress)
 {
     return String(ipAddress[0]) + String(".") +
@@ -10,27 +10,40 @@ String IpAddress2String(const IPAddress& ipAddress)
            String(ipAddress[2]) + String(".") +
            String(ipAddress[3]);
 }
-String addData(String data, float val, int maxSize = 30){
-  String ret;
 
-  // Lấy số lượng dữ liệu
-  int lastIndex=0;
-  int count=0;
-   while ((lastIndex=data.indexOf("\t",lastIndex+1)) >= 0) {
-    count++;
+//"[{\"data\": [11, 70, 95, 100, 120, 257, 271, 300, 321, 383, 450],\"label\": \"Cây lương thực\",\"borderColor\": \"#3e95cd\"},{\"data\": [22, 22, 33, 44, 257, 271, 300, 321, 66, 44],\"label\": \"Cây cảnh\",\"borderColor\": \"#3e9500\"}]"
+void addData(float data, String key, String label, bool save = false, String color = "#ff0000", int maxSize = 30){
+  bool isAddData = false;
+  DynamicJsonDocument docData(2048);
+  DeserializationError err = deserializeJson(docData, getValue(key));
+  if(err) 
+    docData.to<JsonArray>();
+  JsonArray array = docData.as<JsonArray>();
+  for(JsonVariant v : array) {
+      JsonObject obj = v.as<JsonObject>();
+      if(obj["label"].as<String>() == label){
+        obj["borderColor"] = color;
+        JsonArray dataArray = obj["data"].as<JsonArray>();
+        dataArray.add(data);
+        if(dataArray.size()>maxSize){
+          dataArray.remove(0);
+        }
+        isAddData = true;
+        break;
+      }
   }
-  // Nếu dữ liệu nhiều hơn maxSize thì xóa dữ liệu đầu
-  if(count>=maxSize){
-    data = data.substring(data.indexOf("\t")+1);
+
+  if(!isAddData){
+    JsonObject nested = array.createNestedObject();
+    nested["label"] = label;
+    nested["borderColor"] = color;
+    nested.createNestedArray("data").add(data);
   }
-  // Trừ tất cả tọa độ X đi 1 đơn vị
+  String ret;
+  serializeJson(docData, ret);
+  // serializeJsonPretty(docData, Serial);
   
-  // Thêm dữ liệu vào cuối
-    // Lấy chỉ số cuối (tọa độ y)
-  int lastY = data.substring(data.lastIndexOf("\t",data.length()-2)).toInt();
-  lastY++;
-  data = data+lastY+";"+val+"\t";
-  return data;
+  setValue(key, ret, save);
 }
 String splitString(String str, String delim, uint16_t pos){
   String tmp = str;

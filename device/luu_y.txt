@@ -1,0 +1,2 @@
+còn lỗi chưa tạo người dùng được.
+chưa có chức năng quản lý quyên truy cập

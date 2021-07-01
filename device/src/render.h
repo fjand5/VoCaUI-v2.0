@@ -2,15 +2,19 @@
 #include <Arduino.h>
 #include "./event.h"
 #include "./json/ArduinoJson.h"
-DynamicJsonDocument doc(8192);
-JsonObject obj = doc.to<JsonObject>();
+DynamicJsonDocument docRender(8192);
+JsonObject objRender = docRender.to<JsonObject>();
 void renderComponent(String compt, String tab, String key, String name, String option){
-  DynamicJsonDocument subDoc(256);
+  DynamicJsonDocument subDoc(1024);
   deserializeJson(subDoc, option); 
-  obj[tab][key]["name"]=name;
-  obj[tab][key]["option"]=subDoc.as<JsonObject>();
-  obj[tab][key]["type"]=compt;
+  objRender[tab][key]["name"]=name;
+  objRender[tab][key]["option"]=subDoc.as<JsonObject>();
+  objRender[tab][key]["type"]=compt;
 
+}
+void renderChartView(String tab, String key, String name, String option){
+  Serial.println(option);
+  renderComponent("chart-view", tab, key, name, option);
 }
 void renderSlider(String tab, String key, String name, String option, EventFunc event = NULL){
   addEvent(key, event);
@@ -36,6 +40,6 @@ void renderPassword(String tab, String key, String name, String option, EventFun
 
 String getRender() {
   String ret;
-  serializeJson(obj,ret);
+  serializeJson(objRender,ret);
   return ret;
 }

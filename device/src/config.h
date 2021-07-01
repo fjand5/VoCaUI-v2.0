@@ -3,14 +3,14 @@
 #include "./json/ArduinoJson.h"
 #include <LittleFS.h>
 #include <map>
+#include <list>
 
 long verContHost = 1;
 std::map < String, String > ConfigContent;
-
-
-void (*onConfigChange)(String key, String value) = NULL;
+typedef void (*configChangeCallback)(String, String);
+std::list < configChangeCallback > onConfigChanges;
 void setOnConfigChange(void (*func)(String key, String value)){
-  onConfigChange = func;
+  onConfigChanges.push_front(func);
 }
 // Mỗi dòng là một phần tử (một cặp key value) (key):(value)\n
 void loadFileIntoConfig(String content) {
@@ -66,6 +66,13 @@ void setValue(String key, String value, bool save = true) {
   ConfigContent[key] = value;
   verContHost ++;
   // nếu không yêu cầu lưu vào flash
+  for (auto onConfigChange = onConfigChanges.begin();
+   onConfigChange != onConfigChanges.end();
+   ++onConfigChange){
+    if((*onConfigChange) != NULL){
+      (*onConfigChange)(key,value);
+    }
+  }
   if (!save)
     return;
 
@@ -82,16 +89,15 @@ void setValue(String key, String value, bool save = true) {
   }
 
   cfg_file.close();
-  if(onConfigChange != NULL){
-    onConfigChange(key,value);
-  }
 }
 
 // Khởi tạo
 void setupConfig() {
   if (!LittleFS.begin()) {
+    Serial.println("can't begin LittleFS");
     return;
   }
+  Serial.println("began LittleFS");
 
   File cfg_file = LittleFS.open(CONFIG_FILE, "r");
   if (cfg_file) {

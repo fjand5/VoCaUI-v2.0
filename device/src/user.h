@@ -2,150 +2,135 @@
 #define USER_FILE "user.txt"
 
 #include <LittleFS.h>
-#include <map>
+#include "./jwt/ArduinoJWT.h"
+#include "./json/ArduinoJson.h"
+#include "Hash.h"
+#include "utils.h"
+ArduinoJWT jwt("random");
+DynamicJsonDocument docUser(2048);
 
-// tên, (mật khẩu, quyền)
-std::map < String, String > UserContent;
+JsonObject objUser = docUser.to<JsonObject>();
 
-void setupConfig() {
+bool saveUserContent() {
+  File usr_file = LittleFS.open(USER_FILE, "w");
+  if (!usr_file) {
+    usr_file.close();
+    return false;
+  }
+  serializeJson(objUser,usr_file);
+  usr_file.close();
+  return true;
+}
+bool createUser(String user, String pwd, int pms){
+  DynamicJsonDocument subDocUser(256);
+  JsonObject subObj = subDocUser.to<JsonObject>();
+  if(objUser["user"].containsKey(user))
+    return false;
+  subObj["pwd"] = pwd;
+  subObj["pms"] = pms;
+
+  objUser["user"][user] = subObj;
+  return saveUserContent();
+}
+bool changePassword(String user, String opwd,  String npwd){
+  if(objUser["user"][user]["pwd"] == opwd){
+    objUser["user"][user]["pwd"] = npwd;
+    return saveUserContent();
+  }
+  return false;
+}
+bool checkHasRoot(){
+  return objUser["user"].containsKey("root");
+}
+int getPermission(String user, String pwd){
+  if(!objUser["user"].containsKey(user))
+    return -1; // can't auth
+  JsonObject theObj = objUser["user"][user].as<JsonObject>();
+  if(theObj["pwd"].as<String>() == pwd)
+    return theObj["pms"]; // user's permission
+  return -1;
+}
+String createTokenFromUser(String user){
+  JsonObject theObj = objUser["user"][user].as<JsonObject>();
+  String pwd = theObj["pwd"];
+  String hashPwd  = sha1(pwd);
+  String theJwt = user + "." +hashPwd;
+
+  return jwt.encodeJWT(theJwt);
+}
+int getPermisionFromToken(String token){
+  String user;
+  String hashPwd;
+  String data;
+  jwt.decodeJWT(token, data);
+  user = splitString(data,".",0);
+  hashPwd = splitString(data,".",1);
+  JsonObject theObj = objUser["user"][user].as<JsonObject>();
+  String pwd = theObj["pwd"].as<String>();
+  if (hashPwd == sha1(pwd)){
+    return getPermission(user, pwd);
+  }
+  return -1;
+}
+bool removeUser(String user){
+  objUser["user"].as<JsonObject>().remove(user);
+  return saveUserContent();
+}
+void setPermissionRead(String key, int pms){
+  JsonObject readKeys;
+  if(objUser.containsKey("readKeys"))
+    readKeys = objUser["readKeys"].as<JsonObject>();
+  else
+    readKeys = objUser["readKeys"].to<JsonObject>();
+  readKeys[key] = pms;
+  saveUserContent();
+}
+void setPermissionWrite(String key, int pms){
+  JsonObject writeKeys;
+  if(objUser.containsKey("writeKeys"))
+    writeKeys = objUser["writeKeys"].as<JsonObject>();
+  else
+    writeKeys = objUser["writeKeys"].to<JsonObject>();
+  writeKeys.getOrAddMember(key).set(pms);
+
+  saveUserContent();
+}
+bool checkPermissionRead(String key, int pms){
+  JsonObject readKeys = objUser["readKeys"];
+  if(!readKeys.containsKey(key))
+    return true;
+  if(readKeys[key].as<int>() <= pms)
+    return true;
+  else
+    return false;
+}
+bool checkPermissionWrite(String key, int pms){
+  JsonObject writeKeys = objUser["writeKeys"].as<JsonObject>();
+  if(!writeKeys.containsKey(key))
+    return true;
+  if(writeKeys[key].as<int>() <= pms)
+    return true;
+  else
+    return false;
+}
+String getUsersData(){
+  String ret;
+  serializeJson(docUser,ret);
+  return ret;
+}
+void setupUser() {
   if (!LittleFS.begin()) {
     return;
   }
   File usr_file = LittleFS.open(USER_FILE, "r");
   if (usr_file) {
     String tmp = usr_file.readString();
-    loadFileIntoUser(tmp);
+    deserializeJson(docUser, tmp);
+    serializeJsonPretty(docUser, Serial);
+
   }
   usr_file.close();
+  if(!checkHasRoot())
+    createUser("root","123",0);
+  
 }
-
-// User viết HOA chữ đầu mà master
-// Cấu trúc dòng [user]:[pass]
-// permision càng thấp thì quyên càng cao, cao nhất là 0
-void loadFileIntoUser(String content) {
-  while (content.indexOf("\n") >= 0) {
-    String curLine = content.substring(0, content.indexOf("\n"));
-    String user = curLine.substring(0, content.indexOf(":"));
-    String pass = curLine.substring(content.indexOf(":") + 1);
-    UserContent[user] = pass;
-    content.remove(0, curLine.length() + 1);
-  }
-}
-bool saveUserContent() {
-  // lưu vào file
-  File usr_file = LittleFS.open(USER_FILE, "w");
-  if (!usr_file) {
-    usr_file.close();
-    return false;
-  }
-
-  for (std::pair < String, String > e : UserContent) {
-    String k = e.first;
-    String v = e.second;
-    usr_file.print(k + ":" + v + "\n");
-  }
-  usr_file.close();
-  return true;
-}
-bool hasMaster() {
-  for (auto const& x : UserContent)
-  {
-    // nếu có bất cứ user nào là master thì return true luôn
-    if (isUpperCase(x.first[0]))
-      return true;
-
-  }
-  return false;
-}
-
-// Lấy thông tin master
-std::pair < String, String > getMaster() {
-  std::pair < String, String > ret;
-  for (std::pair < String, String > e : UserContent) {
-    String k = e.first;
-    if (isUpperCase(e.first[0])) {
-      ret = e;
-      break;
-    }
-  }
-  return ret;
-}
-// xác thực
-bool authUser(ESP8266WebServer* server) {
-  for (std::pair < String, String > x : UserContent)
-  {
-    if (server->authenticate(x.first.c_str(), x.second.c_str()))
-      return true;
-
-  }
-  return false;
-}
-
-// Đăng ký người dùng
-bool registerUser(String user, String pass) {
-
-  // Nếu user đã tồn tại thì return false
-  if (UserContent.find(user) != UserContent.end())
-    return false;
-
-  // Nếu đăng ký user master mà đã có user master thì riểm tra có phải đang muốn đăng ký master không
-  // bằng cách kiểm tra ký tự đầu của user có phải viết hoa không
-  if (isUpperCase(user[0]) // Nếu muốn đăng ký master
-      && hasMaster()) {   // và đã có master
-    return false;
-  }
-
-  // Đến đây thì có thể lưu vào bộ nhớ
-  // lưu vào ram
-  UserContent[user] = pass;
-  return saveUserContent();
-}
-
-
-// Thay đổi thông tin người dùng
-/*
-  Bài test:
-  - Dùng tài khoản Master để thay đổi tất cả => đã test với chính Master và 1 guest: OK
-  - Dùng tài khoản guest để thay đổi chính nó =>  đã test : OK
-  - Dùng tài khoản guest để thay đổi tất cả =>  chưa test (hạn chế ở font-end => làm biếng)
-  - Dùng tài khoản guest để thay đổi Master => chưa test (hạn chế ở font-end => làm biếng)
-*/
-bool editUser(String curUser, String curPass, String distUser, String newPass) {
-  // Kiểm tra curent có phải là master hay không
-  // Nếu là master thì được đổi mật khẩu tất cả
-
-  std::pair < String, String > master = getMaster();
-  if (master.first == curUser
-      && master.second == curPass ) {
-    for (std::pair < String, String > e : UserContent) {
-
-      if (e.first == distUser) {
-        UserContent[distUser] = newPass;
-        return saveUserContent();
-      }
-    }
-    // Nếu không tìm thấy người dùng trong dữ liệu thì return false.
-    return false;
-  }
-
-
-  // Ngược lại (không phải master) thì chỉ được thay đổi mật khẩu chính mình
-  for (std::pair < String, String > e : UserContent) {
-    if (e.first == curUser
-        && e.second == curPass
-        && curUser == distUser) {
-      UserContent[distUser] = newPass;
-      return saveUserContent();
-    }
-  }
-  return false;
-
-}
-String listUser() {
-  String ret;
-  for (std::pair < String, String > e : UserContent) {
-    ret+=e.first +"\n";
-  }
-  return ret;
-}
-////////////////////////////////////////////////////////////////////////////////////
