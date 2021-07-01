@@ -72,7 +72,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length){
     }
 }
 bool connToMqttBroker(String token, uint8_t countTry = 3){
-    mc.setTimeout(100);
+    mc.setTimeout(200);
     mqttClient.disconnect();
 
     while(countTry && getMqttInfo(token) == false){
@@ -109,17 +109,18 @@ void setupMqtt(){
         connToMqttBroker(getValue("mqtt-token"));
     }
     setOnConfigChange([](String key, String val){
-        String res = getValue(key).indexOf("\"")>=0
-        ?"{\"" + key +"\":"+getValue(key)+"}" // can't cast to string
-        :"{\"" + key +"\":\""+getValue(key)+"\"}"; // cast to string 
+        String data = getValue(key);
+        String res = data.indexOf("\"")>=0
+        ?"{\"" + key +"\":"+data+"}" // can't cast to string
+        :"{\"" + key +"\":\""+data+"\"}"; // cast to string 
         largePublish((baseTopic+"/Tx/").c_str(), res.c_str(), false);
     });
 };
 void loopMqtt(){
     if (mqttClient.connected())
         mqttClient.loop();
-    else if(checkKey("token")){
-      connToMqttBroker(getValue("token"),0);
+    else if(checkKey("mqtt-token")){
+      connToMqttBroker(getValue("mqtt-token"),0);
 
     }
 }

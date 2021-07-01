@@ -118,7 +118,7 @@ void renderSystem(){
     "newLine":true,
     "showSplit":true
     }))",[](String key, String val){
-      connToMqttBroker(getValue("token"));
+      connToMqttBroker(getValue("mqtt-token"));
     });
   renderButton("system","reset","Reset hệ thống",R"({
     }))",[](String key, String val){
@@ -213,6 +213,8 @@ void setupWebserver() {
           String pwd = obj["pwd"];
           if(getPermission(user,pwd)>=0){
             webSocket.sendTXT(num,(String("token:")+createTokenFromUser(user)).c_str());
+        Serial.println(createTokenFromUser(user));
+
             listLogin.push_front(num);
             listLogin.unique();
             return;

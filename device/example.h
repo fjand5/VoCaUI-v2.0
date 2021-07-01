@@ -11,7 +11,7 @@ void setup() {
 
   // render
   renderChartView("Control Led Button","sin-cos-value","Sin Cos Value",R"({
-        "labels":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30],
+        "labels":[1,2,3,4,5,6,7,8,9,10,11,12],
         "yMin":-1,
         "yMax":1
   })");
@@ -47,10 +47,10 @@ float sig = 0.05;
 void loop() {
   loopWebserver();
   loopMqtt();
-  if(millis() - mainTimer > 2000){
+  if(millis() - mainTimer > 1000){
     mainTimer = millis();
-    addData(sin(count),"sin-cos-value","Sin Value",false,"#ff0000",30);
-    // addData(cos(count),"sin-cos-value","Cos Value",false,"#0000ff",30);
+    addData(sin(count),"sin-cos-value","Sin Value",false,"#ff0000",12);
+    // addData(cos(count),"sin-cos-value","Cos Value",false,"#0000ff",12);
     count+=sig;
     if(count>=3.1)
       sig=-0.05;
